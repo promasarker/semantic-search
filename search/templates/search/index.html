@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>VectorSearch — Semantic Code Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800;14..32,900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  /* Light mode */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-tertiary: #f1f5f9;
+  --bg-elevated: #ffffff;
+  --text-primary: #0a0a0a;
+  --text-secondary: #3a3a3a;
+  --text-tertiary: #6c6c6c;
+  --border-light: #e5e5e5;
+  --border-medium: #d4d4d4;
+  --accent: #000000;
+  --accent-soft: #2c2c2c;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.03);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.05), 0 4px 6px -2px rgba(0,0,0,0.025);
+  --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.05), 0 10px 10px -5px rgba(0,0,0,0.01);
+}
+
+[data-theme="dark"] {
+  --bg-primary: #000000;
+  --bg-secondary: #0a0a0a;
+  --bg-tertiary: #141414;
+  --bg-elevated: #0f0f0f;
+  --text-primary: #ffffff;
+  --text-secondary: #b0b0b0;
+  --text-tertiary: #6b6b6b;
+  --border-light: #1f1f1f;
+  --border-medium: #2a2a2a;
+  --accent: #ffffff;
+  --accent-soft: #e0e0e0;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.3);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.3);
+  --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.3);
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background 0.3s ease, color 0.3s ease;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Animated background */
+.animated-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.grain {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+}
+
+.grid-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    linear-gradient(var(--border-light) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border-light) 1px, transparent 1px);
+  background-size: 60px 60px;
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+[data-theme="dark"] .grid-overlay {
+  opacity: 0.15;
+}
+
+/* Navigation */
+nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(var(--bg-primary-rgb, 255,255,255), 0.8);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border-light);
+  transition: background 0.3s ease;
+}
+
+[data-theme="dark"] nav {
+  background: rgba(0,0,0,0.8);
+}
+
+.nav-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+}
+
+.logo-mark {
+  width: 36px;
+  height: 36px;
+  background: var(--accent);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.logo-mark::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.2) 100%);
+}
+
+.logo-mark span {
+  color: var(--bg-primary);
+  font-weight: 800;
+  font-size: 18px;
+}
+
+.logo-text {
+  font-weight: 800;
+  font-size: 1.1rem;
+  letter-spacing: -0.3px;
+  color: var(--text-primary);
+}
+
+.logo-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  margin-left: 8px;
+  letter-spacing: 0.3px;
+}
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.theme-toggle {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-elevated);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  transition: all 0.2s ease;
+  color: var(--text-primary);
+}
+
+.theme-toggle:hover {
+  transform: scale(1.05);
+  border-color: var(--accent);
+}
+
+.status-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  letter-spacing: 0.3px;
+}
+
+/* Hero section */
+.hero {
+  position: relative;
+  z-index: 1;
+  padding: 80px 2rem 60px;
+  text-align: center;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.tagline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-light);
+  border-radius: 100px;
+  padding: 6px 16px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 32px;
+  letter-spacing: 0.5px;
+}
+
+.tagline-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+}
+
+h1 {
+  font-size: clamp(2.5rem, 7vw, 4.5rem);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin-bottom: 24px;
+  color: var(--text-primary);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-description {
+  font-size: 1.05rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  max-width: 600px;
+  margin: 0 auto 48px;
+}
+
+/* Search section */
+.search-section {
+  position: relative;
+  z-index: 1;
+  max-width: 720px;
+  margin: 0 auto 32px;
+}
+
+.search-container {
+  position: relative;
+}
+
+.search-glow {
+  position: absolute;
+  inset: -2px;
+  border-radius: 16px;
+  background: var(--accent);
+  opacity: 0;
+  filter: blur(12px);
+  transition: opacity 0.3s ease;
+  z-index: -1;
+}
+
+.search-container:focus-within .search-glow {
+  opacity: 0.15;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  background: var(--bg-elevated);
+  border: 1.5px solid var(--border-light);
+  border-radius: 16px;
+  padding: 8px 8px 8px 20px;
+  gap: 12px;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-md);
+}
+
+.search-container:focus-within .search-box {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-lg);
+}
+
+.search-icon {
+  font-size: 18px;
+  opacity: 0.5;
+  color: var(--text-secondary);
+}
+
+.search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 1rem;
+  font-family: 'Inter', sans-serif;
+  color: var(--text-primary);
+  font-weight: 500;
+  padding: 12px 0;
+}
+
+.search-input::placeholder {
+  color: var(--text-tertiary);
+  font-weight: 400;
+}
+
+.search-button {
+  background: var(--accent);
+  color: var(--bg-primary);
+  border: none;
+  border-radius: 12px;
+  padding: 12px 28px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.2s ease;
+  letter-spacing: 0.3px;
+}
+
+.search-button:hover {
+  transform: translateY(-1px);
+  filter: brightness(0.95);
+}
+
+.search-button:active {
+  transform: translateY(0);
+}
+
+/* Quick filters */
+.quick-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 24px;
+}
+
+.filter-chip {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-light);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  letter-spacing: 0.2px;
+}
+
+.filter-chip:hover {
+  background: var(--accent);
+  color: var(--bg-primary);
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+/* Tech stack */
+.tech-stack {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 32px;
+}
+
+.tech-item {
+  font-size: 0.7rem;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+  color: var(--text-tertiary);
+  border: 1px solid var(--border-light);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Stats */
+.stats-grid {
+  display: flex;
+  justify-content: center;
+  gap: 64px;
+  margin-top: 64px;
+  padding-top: 56px;
+  border-top: 1px solid var(--border-light);
+  flex-wrap: wrap;
+}
+
+.stat-item {
+  text-align: center;
+}
+
+.stat-number {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.5px;
+}
+
+.stat-label {
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+  font-weight: 600;
+  margin-top: 6px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* Main content */
+.main-content {
+  position: relative;
+  z-index: 1;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 2rem 80px;
+}
+
+/* States */
+.state-container {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  padding: 80px 20px;
+  text-align: center;
+}
+
+.state-icon {
+  font-size: 48px;
+  opacity: 0.3;
+  margin-bottom: 20px;
+}
+
+.state-title {
+  font-weight: 700;
+  font-size: 1rem;
+  margin-bottom: 8px;
+  letter-spacing: -0.2px;
+}
+
+.state-description {
+  font-size: 0.85rem;
+  color: var(--text-tertiary);
+  max-width: 360px;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 2px solid var(--border-medium);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Results header */
+.results-header {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-light);
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.results-info h3 {
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.results-info p {
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+}
+
+.query-badge {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 0.75rem;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-secondary);
+  max-width: 400px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Result cards */
+.result-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-light);
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-bottom: 16px;
+  transition: all 0.2s ease;
+  animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.result-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--border-medium);
+}
+
+.card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.card-rank {
+  width: 28px;
+  height: 28px;
+  background: var(--accent);
+  color: var(--bg-primary);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.card-question {
+  flex: 1;
+  font-weight: 600;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+.similarity-score {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  letter-spacing: 0.3px;
+}
+.similarity-bar-wrapper {
+  margin-top: 12px;
+  margin-bottom: 4px;
+}
+
+.similarity-bar-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: var(--text-tertiary);
+}
+
+.similarity-bar-track {
+  height: 6px;
+  background: var(--bg-tertiary);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.similarity-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Color changes based on score */
+.similarity-bar-fill.high   { background: #22c55e; }
+.similarity-bar-fill.medium { background: #f59e0b; }
+.similarity-bar-fill.low    { background: #ef4444; }
+.card-divider {
+  height: 1px;
+  background: var(--border-light);
+  margin: 16px 0;
+}
+
+.card-answer {
+  font-size: 0.85rem;
+  line-height: 1.7;
+  color: var(--text-secondary);
+}
+
+.card-answer.collapsed {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card-answer.expanded {
+  display: block;
+}
+
+.card-answer code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  background: var(--bg-tertiary);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--text-primary);
+}
+
+.card-answer pre {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 12px;
+  overflow-x: auto;
+  margin: 12px 0;
+}
+
+.card-answer pre code {
+  background: none;
+  padding: 0;
+  font-size: 0.75rem;
+}
+
+.expand-button {
+  background: none;
+  border: none;
+  color: var(--text-tertiary);
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 0 0;
+  margin-top: 12px;
+  font-family: 'Inter', sans-serif;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  letter-spacing: 0.3px;
+}
+
+.expand-button:hover {
+  color: var(--accent);
+  gap: 10px;
+}
+
+/* Footer */
+footer {
+  position: relative;
+  z-index: 1;
+  border-top: 1px solid var(--border-light);
+  background: var(--bg-secondary);
+  padding: 2rem;
+}
+
+.footer-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.footer-icon {
+  width: 28px;
+  height: 28px;
+  background: var(--accent);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: var(--bg-primary);
+}
+
+.footer-name {
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: -0.2px;
+}
+
+.footer-links {
+  display: flex;
+  gap: 28px;
+}
+
+.footer-link {
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+  text-decoration: none;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  transition: color 0.2s;
+}
+
+.footer-link:hover {
+  color: var(--accent);
+}
+
+.footer-copyright {
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+  letter-spacing: 0.2px;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .nav-container {
+    padding: 0 1rem;
+  }
+  
+  .hero {
+    padding: 50px 1rem 40px;
+  }
+  
+  .main-content {
+    padding: 0 1rem 60px;
+  }
+  
+  .stats-grid {
+    gap: 32px;
+  }
+  
+  .search-button {
+    padding: 12px 20px;
+  }
+  
+  .footer-links {
+    display: none;
+  }
+}
+
+/* Smooth scroll */
+html {
+  scroll-behavior: smooth;
+}
+</style>
+</head>
+<body>
+<div class="animated-bg">
+  <div class="grain"></div>
+  <div class="grid-overlay"></div>
+</div>
+
+<nav>
+  <div class="nav-container">
+    <a class="logo" href="#">
+      <div class="logo-mark">
+        <span>⌨️</span>
+      </div>
+      <span class="logo-text">VectorSearch</span>
+      <span class="logo-badge">BETA</span>
+    </a>
+    <div class="nav-actions">
+      <span class="status-badge">SEMANTIC AI</span>
+      <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+        🌙
+      </button>
+    </div>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="tagline">
+    <div class="tagline-dot"></div>
+    VECTOR SIMILARITY SEARCH
+  </div>
+  <h1>Find answers by <span class="gradient-text">meaning,</span><br/>not keywords</h1>
+  <p class="hero-description">
+    Ask any programming question in natural language. Our semantic engine understands intent and finds the most relevant StackOverflow answers instantly.
+  </p>
+</div>
+
+<div class="search-section">
+  <div class="search-container">
+    <div class="search-glow"></div>
+    <div class="search-box">
+      <span class="search-icon">⌕</span>
+      <input 
+        type="text" 
+        class="search-input" 
+        id="queryInput" 
+        placeholder="e.g., How to declare an array in Python?"
+        autocomplete="off"
+      />
+      <button class="search-button" type="submit" form="searchForm">Search →</button>
+    </div>
+  </div>
+
+  <div class="quick-filters">
+    <button class="filter-chip" data-query="how to declare array in python">🐍 Python array</button>
+    <button class="filter-chip" data-query="async await in javascript">⚡ JS async/await</button>
+    <button class="filter-chip" data-query="what is recursion">🔄 Recursion</button>
+    <button class="filter-chip" data-query="sql join types explained">🗄️ SQL joins</button>
+    <button class="filter-chip" data-query="how to reverse a linked list">🔗 Linked list</button>
+    <button class="filter-chip" data-query="git merge vs rebase">🌿 Git merge</button>
+  </div>
+
+  <div class="tech-stack">
+    <span class="tech-item">Django</span>
+    <span class="tech-item">Cosine Similarity</span>
+    <span class="tech-item">GitHub Models</span>
+    <span class="tech-item">3,000 Q&A</span>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-item">
+      <div class="stat-number">3,000</div>
+      <div class="stat-label">Q&A PAIRS</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-number">&lt;100ms</div>
+      <div class="stat-label">AVG LATENCY</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-number">∞</div>
+      <div class="stat-label">POSSIBILITIES</div>
+    </div>
+  </div>
+</div>
+
+<div class="main-content">
+  <!-- Hidden form for STEP 5 integration -->
+  <form id="searchForm" style="display: none;">
+    <input type="text" id="queryInputHidden" />
+  </form>
+
+  <div class="state-container" id="emptyState">
+    <div class="state-icon">⌨️</div>
+    <div class="state-title">Ready to search</div>
+    <div class="state-description">Enter a programming question above to get semantically matched answers</div>
+  </div>
+
+  <div class="state-container" id="loadingState">
+    <div class="loading-spinner"></div>
+    <div class="state-title" style="margin-top: 20px;">Searching...</div>
+    <div class="state-description">Converting query to vector & computing similarity</div>
+  </div>
+
+  <div class="state-container" id="errorState">
+    <div class="state-icon">⚠️</div>
+    <div class="state-title">Connection error</div>
+    <div class="state-description">Make sure the Django server is running on port 8000</div>
+  </div>
+
+  <div class="results-header" id="resultsHeader">
+    <div class="results-info">
+      <h3>Top matches</h3>
+      <p id="resultsMeta">Semantically similar Q&A pairs</p>
+    </div>
+    <div class="query-badge" id="queryBadge"></div>
+  </div>
+
+  <div id="results"></div>
+</div>
+
+<footer>
+  <div class="footer-container">
+    <div class="footer-brand">
+      <div class="footer-icon">⌨️</div>
+      <span class="footer-name">VectorSearch</span>
+    </div>
+    <div class="footer-links">
+      <a class="footer-link" href="#">About</a>
+      <a class="footer-link" href="#">GitHub</a>
+      <a class="footer-link" href="#">Documentation</a>
+      <a class="footer-link" href="#">API</a>
+    </div>
+    <div class="footer-copyright">Developed by Proma Sarker, Roll 2110049</div>
+  </div>
+</footer>
+
+<script>
+// Theme management
+const themeToggle = document.getElementById('themeToggle');
+const htmlElement = document.documentElement;
+
+function getTheme() {
+  return localStorage.getItem('theme') || 
+         (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+}
+
+function setTheme(theme) {
+  document.body.setAttribute('data-theme', theme);
+  localStorage.setItem('theme', theme);
+  themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+}
+
+function toggleTheme() {
+  const current = getTheme();
+  setTheme(current === 'dark' ? 'light' : 'dark');
+}
+
+// Initialize theme
+setTheme(getTheme());
+themeToggle.addEventListener('click', toggleTheme);
+
+// ============================================
+// STEP 5: Connect search box to backend
+// ============================================
+const form = document.querySelector("#searchForm");
+const input = document.querySelector("#queryInput");
+const resultsDiv = document.querySelector("#results");
+
+// Also connect the search button
+const searchButton = document.querySelector(".search-button");
+
+function showOnly(stateId) {
+  ['emptyState', 'loadingState', 'errorState'].forEach(id => {
+    document.getElementById(id).style.display = 'none';
+  });
+  document.getElementById(stateId).style.display = 'flex';
+  document.getElementById('resultsHeader').style.display = 'none';
+  resultsDiv.innerHTML = '';
+}
+
+function escapeHtml(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Main search function as per STEP 5
+async function performSearch(query) {
+  if (!query || !query.trim()) return;
+  
+  showOnly('loadingState');
+  
+  try {
+    const res = await fetch("/api/search/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ question: query.trim() })
+    });
+    
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    
+    const data = await res.json();
+    const results = data.results || [];
+    
+    if (results.length === 0) {
+      showOnly('emptyState');
+      return;
+    }
+    
+    // Show results header
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('resultsHeader').style.display = 'flex';
+    document.getElementById('resultsMeta').textContent = `${results.length} semantically matched results`;
+    document.getElementById('queryBadge').textContent = `"${query.trim()}"`;
+    
+    // Display results as per STEP 5 format
+    resultsDiv.innerHTML = "";
+    
+    results.forEach((item, idx) => {
+      const similarityPercent = Math.round((item.similarity || 0) * 100);
+      const card = document.createElement("div");
+      card.className = "result-card";
+      card.style.animationDelay = `${idx * 0.05}s`;
+      
+      const barColor = similarityPercent >= 70 ? 'high' : similarityPercent >= 40 ? 'medium' : 'low';
+
+      card.innerHTML = `
+        <div class="card-header">
+          <div class="card-rank">${idx + 1}</div>
+          <div class="card-question">${escapeHtml(item.question)}</div>
+          <div class="similarity-score">${similarityPercent}% match</div>
+        </div>
+        <div class="similarity-bar-wrapper">
+          <div class="similarity-bar-label">
+            <span>SEMANTIC SIMILARITY</span>
+            <span>${similarityPercent}%</span>
+          </div>
+          <div class="similarity-bar-track">
+            <div class="similarity-bar-fill ${barColor}" style="width: 0%"
+                 data-target="${similarityPercent}">
+            </div>
+          </div>
+        </div>
+        <div class="card-divider"></div>
+        <div class="card-answer collapsed" id="answer-${idx}">
+          ${escapeHtml(item.answer || 'No answer available')}
+        </div>
+        <button class="expand-button" id="btn-${idx}" onclick="toggleAnswer(${idx})">
+          Show more ↓
+        </button>
+      `;
+      resultsDiv.appendChild(card);
+    });
+
+    /* Animate bars after cards are in the DOM */
+    setTimeout(() => {
+      document.querySelectorAll('.similarity-bar-fill').forEach(bar => {
+        bar.style.width = bar.getAttribute('data-target') + '%';
+      });
+    }, 100);
+    
+  } catch (error) {
+    console.error('Search error:', error);
+    showOnly('errorState');
+  }
+}
+
+// Toggle answer expansion
+function toggleAnswer(index) {
+  const answerEl = document.getElementById(`answer-${index}`);
+  const btnEl = document.getElementById(`btn-${index}`);
+  const isCollapsed = answerEl.classList.contains('collapsed');
+  
+  if (isCollapsed) {
+    answerEl.classList.remove('collapsed');
+    answerEl.classList.add('expanded');
+    btnEl.innerHTML = 'Show less ↑';
+  } else {
+    answerEl.classList.add('collapsed');
+    answerEl.classList.remove('expanded');
+    btnEl.innerHTML = 'Show more ↓';
+  }
+}
+
+// Form submit handler (STEP 5)
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  await performSearch(input.value);
+});
+
+// Search button click handler
+searchButton.addEventListener("click", async () => {
+  await performSearch(input.value);
+});
+
+// Enter key handler
+input.addEventListener("keypress", async (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    await performSearch(input.value);
+  }
+});
+
+// Filter chips
+document.querySelectorAll('.filter-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    const query = chip.getAttribute('data-query');
+    if (query) {
+      input.value = query;
+      performSearch(query);
+    }
+  });
+});
+
+// Initial state
+showOnly('emptyState');
+</script>
+
+</body>
+</html>
