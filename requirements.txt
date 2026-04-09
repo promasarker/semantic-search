@@ -1,8 +1,8 @@
 django
 scikit-learn
 numpy
-
+requests
 gunicorn
 whitenoise
-
-sentence-transformers
+python-dotenv
+openai
